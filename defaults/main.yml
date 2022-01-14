@@ -27,7 +27,7 @@ postgresql_auth_method: "{{ ansible_fips  | ternary('scram-sha-256', 'md5') }}"
 postgresql_unix_socket_directories:
   - /var/run/postgresql
 
-postgresql_service_state: started
+postgresql_service_state: restarted
 postgresql_service_enabled: true
 
 # Global configuration options that will be set in postgresql.conf.
