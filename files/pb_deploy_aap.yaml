@@ -4,4 +4,4 @@
 - hosts: all
   become: yes
   roles:
-    - role: ../aap_install
+    - role: ../../aap_install

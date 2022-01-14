@@ -28,8 +28,26 @@
     mode: "{{ postgresql_unix_socket_directories_mode }}"
   with_items: "{{ postgresql_unix_socket_directories }}"
 
-- name: 'restart_postgresql'
-  service:
+- name: Ensure PostgreSQL is started and enabled on boot.
+  systemd:
     name: "{{ postgresql_daemon }}"
-    state: "{{ postgresql_restarted_state }}"
-    sleep: 5
+    state: "{{ postgresql_service_state }}"
+    enabled: "{{ postgresql_service_enabled }}"
+
+- name: "Set the proper systemd configuration"
+  copy:
+    src: postgresql.service
+    dest: '/etc/systemd/system/postgresql.service'
+    #dest: '/etc/systemd/system/multi-user.target.wants/postgresql.service'
+  register: systemd
+
+- name: "just force systemd to reread configs"
+  systemd:
+    daemon_reload: yes
+  when: systemd.changed | bool
+
+#- name: 'restart_postgresql'
+#  service:
+#    name: "{{ postgresql_daemon }}"
+#    state: "{{ postgresql_restarted_state }}"
+#    sleep: 5
