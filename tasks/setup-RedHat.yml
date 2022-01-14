@@ -1,0 +1,38 @@
+---
+- stat:
+    path: '/root/.pgsql_enabled'
+  register: pgsql_mod
+- name: "Enable pgsql module"
+  command:
+    cmd: 'dnf module -y enable postgresql:12'
+  register: enabled_
+  when: not pgsql_mod.stat.exists
+- file:
+    path: '/root/.pgsql_enabled'
+    state: touch
+  when: enabled_.changed | bool
+- name: Ensure PostgreSQL packages are installed.
+  dnf:
+    name: "{{ postgresql_packages }}"
+    state: present
+    enablerepo: "{{ postgresql_enablerepo | default(omit, true) }}"
+    # Don't let postgresql-contrib cause the /usr/bin/python symlink
+    # to be installed, which breaks later Ansible runs on Fedora 30,
+    # and affects system behavior in multiple ways.
+    exclude: python-unversioned-command
+- name: Ensure PostgreSQL Python libraries are installed.
+  dnf:
+    name: "{{ postgresql_python_library }}"
+    state: present
+    enablerepo: "{{ postgresql_enablerepo | default(omit, true) }}"
+- name: "Enable firewalld"
+  systemd:
+    name: firewalld
+    state: started
+    enabled: true
+- name: 'Allow PostgreSQL database service'
+  firewalld:
+    immediate: true
+    service: postgresql
+    permanent: yes
+    state: enabled

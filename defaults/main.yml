@@ -1,0 +1,85 @@
+---
+# defaults file for aap_install
+awx_user: awx
+awx_database: aap
+awx_user_pass: !vault |
+    $ANSIBLE_VAULT;1.1;AES256
+    33346363363438336135656531373630643465303239663439613133656137623264316530396162
+    6437383838633638343339643738363163393030303833640a666162333531383266313439373239
+    61333863393330643462643666636264333638363461383961323337333063656532623265356561
+    6265336239313730340a316263396237323130326631393131663665663365646335343034613263
+    6431
+
+# RHEL/CentOS only. Set a repository to use for PostgreSQL installation.
+postgresql_enablerepo: ""
+
+# Set postgresql state when configuration changes are made. Recommended values:
+# `restarted` or `reloaded`
+postgresql_restarted_state: "restarted"
+
+postgresql_python_library: python-psycopg2
+postgresql_user: postgres
+postgresql_group: postgres
+
+# `md5` or `scram-sha-256` (https://www.postgresql.org/docs/10/auth-methods.html)
+postgresql_auth_method: "{{ ansible_fips  | ternary('scram-sha-256', 'md5') }}"
+
+postgresql_unix_socket_directories:
+  - /var/run/postgresql
+
+postgresql_service_state: started
+postgresql_service_enabled: true
+
+# Global configuration options that will be set in postgresql.conf.
+postgresql_global_config_options:
+  - option: unix_socket_directories
+    value: '{{ postgresql_unix_socket_directories | join(",") }}'
+  - option: listen_addresses
+    value: '{{ ansible_default_ipv4.address }}'
+  - option: port
+    value: 5432
+
+# Host based authentication (hba) entries to be added to the pg_hba.conf. This
+# variable's defaults reflect the defaults that come with a fresh installation.
+postgresql_hba_entries:
+  - {type: local, database: all, user: postgres, auth_method: peer}
+  - {type: local, database: all, user: all, auth_method: peer}
+  - {type: host, database: all, user: all, address: '127.0.0.1/32', auth_method: "{{ postgresql_auth_method }}"}
+  - {type: host, database: aap, user: awx, address: '{{ ansible_default_ipv4.address }}/32', auth_method: "{{ postgresql_auth_method }}"}
+  - {type: host, database: all, user: all, address: '::1/128', auth_method: "{{ postgresql_auth_method }}"}
+
+# Debian only. Used to generate the locales used by PostgreSQL databases.
+postgresql_locales:
+  - 'en_US.UTF-8'
+
+# Databases to ensure exist.
+postgresql_databases:
+  - name: "{{ awx_database }}" # required; the rest are optional
+#   lc_collate: # defaults to 'en_US.UTF-8'
+#   lc_ctype: # defaults to 'en_US.UTF-8'
+#   encoding: # defaults to 'UTF-8'
+#   template: # defaults to 'template0'
+#   login_host: # defaults to '{{ ansible_hostname }}'
+#   login_password: # defaults to not set
+#   login_user: # defaults to '{{ postgresql_user }}'
+#   login_unix_socket: # defaults to 1st of postgresql_unix_socket_directories
+#   port: # defaults to not set
+    owner: "{{ awx_user }}" # defaults to postgresql_user
+    state: 'present'  # defaults to 'present'
+
+# Users to ensure exist.
+postgresql_users: 
+  - name: "{{ awx_user }}" #required; the rest are optional
+    password: "{{ awx_user_pass }}"
+    encrypted: true
+#   priv: # defaults to not set
+#   role_attr_flags: # defaults to not set
+#   login_host: # defaults to 'localhost'
+#   login_password: # defaults to not set
+#   login_user: # defaults to '{{ postgresql_user }}'
+#   login_unix_socket: # defaults to 1st of postgresql_unix_socket_directories
+#   port: # defaults to not set
+    state: present # defaults to 'present'
+
+# Whether to output user data when managing users.
+postgres_users_no_log: true

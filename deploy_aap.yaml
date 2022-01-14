@@ -1,0 +1,7 @@
+---
+# Sample role to install Ansible Automation Platform with an external PostgresSQL database all running on RHEL 8 hosts.
+# ansible-playbook -i hosts deploy_aap.yaml -vv --ask-vault-pass
+- hosts: all
+  become: yes
+  roles:
+    - role: ../aap_install
